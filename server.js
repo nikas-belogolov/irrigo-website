@@ -2,6 +2,8 @@ import { createRequestHandler } from "@remix-run/express";
 import compression from "compression";
 import express from "express";
 import morgan from "morgan";
+import { Server } from "socket.io";
+import { createServer } from 'node:http';
 
 const viteDevServer =
   process.env.NODE_ENV === "production"
@@ -19,6 +21,38 @@ const remixHandler = createRequestHandler({
 });
 
 const app = express();
+const server = createServer(app);
+const io = new Server(server);
+
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
+
+app.post("/graph", (req, res) => {
+  
+  io.emit("data", {
+    y: {
+      p: req.body.p,
+      f: req.body.f
+    },
+    x: new Date(Date.now())
+  });
+  res.status(200);
+})
+// io.on('connection', (socket) => {
+//   setInterval(() => {
+//     const data1 = Math.random() * 100;
+//     const data2 = Math.random() * 100;
+//     socket.emit("data", {
+//       y: {
+//         f: data1,
+//         p: data2
+//       },
+//       x: new Date(Date.now())
+//     });
+//   }, 1000);
+
+//   console.log('a user connected');
+// });
 
 app.use(compression());
 
@@ -45,7 +79,9 @@ app.use(morgan("tiny"));
 // handle SSR requests
 app.all("*", remixHandler);
 
+
+
 const port = process.env.PORT || 3000;
-app.listen(port, () =>
+server.listen(port, () =>
   console.log(`Express server listening at http://localhost:${port}`)
 );

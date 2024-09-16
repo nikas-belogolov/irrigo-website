@@ -42,8 +42,16 @@ export default function Index() {
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [
+        {
+            label: "Pressure",
+            data: [],
+            borderColor: "rgba(255, 99, 132, 1)",
+            backgroundColor: "rgba(255, 99, 132, 0.2)",
+            fill: true,
+            tension: 0.1, // Smooths the line
+          },
       {
-        label: "Continuous Data",
+        label: "Flow rate",
         data: [],
         borderColor: "rgba(75, 192, 192, 1)",
         backgroundColor: "rgba(75, 192, 192, 0.2)",
@@ -57,13 +65,18 @@ export default function Index() {
 
     socket.on("data", (data) => {
       setChartData((prevData) => {
-        const updatedData = [...prevData.datasets[0].data, data.y].slice(-30);
-        const updatedLabels = [...prevData.labels, data.x].slice(-30);
+        const flowRate = [...prevData.datasets[0].data, data.y.f].slice(-30);
+        const pressureRate = [...prevData.datasets[1].data, data.y.p].slice(-30);
 
+        const updatedLabels = [...prevData.labels, data.x].slice(-30);
+        console.log(data)
         return {
           ...prevData,
           labels: updatedLabels,
-          datasets: [{ ...prevData.datasets[0], data: updatedData }],
+          datasets: [
+            { ...prevData.datasets[0], data: flowRate },
+            { ...prevData.datasets[1], data: pressureRate }
+        ],
         };
       });
     })

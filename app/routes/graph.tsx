@@ -16,6 +16,8 @@ import {
   Legend
 } from "chart.js";
 
+import { CSVDownload, CSVLink } from "react-csv";
+
 const socket = io();
 
 ChartJS.register(
@@ -42,14 +44,14 @@ export default function Index() {
   const [chartData, setChartData] = useState({
     labels: [],
     datasets: [
-        {
-            label: "Pressure",
-            data: [],
-            borderColor: "rgba(255, 99, 132, 1)",
-            backgroundColor: "rgba(255, 99, 132, 0.2)",
-            fill: true,
-            tension: 0.1, // Smooths the line
-          },
+      {
+        label: "Pressure",
+        data: [],
+        borderColor: "rgba(255, 99, 132, 1)",
+        backgroundColor: "rgba(255, 99, 132, 0.2)",
+        fill: true,
+        tension: 0.1, // Smooths the line
+      },
       {
         label: "Flow rate",
         data: [],
@@ -61,21 +63,29 @@ export default function Index() {
     ],
   });
 
+  const csvHeaders = ["pressure", "flow", "timestamp"];
+  const [csvData, setCsvData] = useState([]);
+
+  // const csvData: any[] = [];
+
   useEffect(() => {
 
     socket.on("data", (data) => {
       setChartData((prevData) => {
-        const flowRate = [...prevData.datasets[0].data, data.y.f].slice(-30);
-        const pressureRate = [...prevData.datasets[1].data, data.y.p].slice(-30);
+        const pressureRate = [...prevData.datasets[0].data, data.y.p].slice(-30);
+        const flowRate = [...prevData.datasets[1].data, data.y.f].slice(-30);
 
         const updatedLabels = [...prevData.labels, data.x].slice(-30);
         console.log(data)
+
+        setCsvData([...csvData, [data.y.p, data.y.f, data.x]])
+
         return {
           ...prevData,
           labels: updatedLabels,
           datasets: [
-            { ...prevData.datasets[0], data: flowRate },
-            { ...prevData.datasets[1], data: pressureRate }
+            { ...prevData.datasets[0], data: pressureRate },
+            { ...prevData.datasets[1], data: flowRate }
         ],
         };
       });
@@ -96,7 +106,7 @@ export default function Index() {
         <Line data={chartData} options={{animation: {
       duration: 0, // Disable animations for smoother real-time updates
     },}} />
-
+      <CSVLink data={csvData} headers={csvHeaders}>Download CSV data</CSVLink>
       {/* </Suspense> */}
     </div>
   );

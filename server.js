@@ -5,6 +5,17 @@ import morgan from "morgan";
 import { Server } from "socket.io";
 import { createServer } from 'node:http';
 
+import { createObjectCsvWriter } from "csv-writer";
+
+const csvWriter = createObjectCsvWriter({
+    path: './graph_data.csv',
+    header: [
+      {id: 'pressure', title: 'pressure'},
+      {id: 'flow', title: 'flow'},
+      {id: 'timestamp', title: 'timestamp'}
+    ]
+});
+
 const viteDevServer =
   process.env.NODE_ENV === "production"
     ? undefined
@@ -27,32 +38,25 @@ const io = new Server(server);
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-app.post("/graph", (req, res) => {
-  
-  io.emit("data", {
-    y: {
-      p: req.body.p,
-      f: req.body.f
-    },
-    x: new Date(Date.now())
-  });
-  res.status(200);
-})
-// io.on('connection', (socket) => {
-//   setInterval(() => {
-//     const data1 = Math.random() * 100;
-//     const data2 = Math.random() * 100;
-//     socket.emit("data", {
-//       y: {
-//         f: data1,
-//         p: data2
-//       },
-//       x: new Date(Date.now())
-//     });
-//   }, 1000);
+app.post("/graph", async (req, res) => {
+  const [p, f, t] = [req.body.p, req.body.f, new Date(Date.now())];
 
-//   console.log('a user connected');
-// });
+  io.emit("data", {
+    y: { p, f },
+    x: t
+  });
+
+  // Save data to csv
+  await csvWriter.writeRecords([{
+    pressure: p, flow: f, timestamp: t
+  }])
+
+  res.status(200).json({
+    message: "Successfully received data."
+  });
+
+  
+})
 
 app.use(compression());
 
